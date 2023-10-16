@@ -7,6 +7,10 @@
 #include "threads/interrupt.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
+#include "threads/malloc.h"
+
+/* Keep list of sleeping threads*/
+static struct list sleep_list;
   
 /* See [8254] for hardware details of the 8254 timer chip. */
 
@@ -30,11 +34,28 @@ static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
 
+
+/* Returns true if value A is less than value B, false
+   otherwise. */
+bool
+thread_wakeup_time_less (const struct list_elem *a_, const struct list_elem *b_,
+            void *aux UNUSED) 
+{
+  const struct thread *a = list_entry (a_, struct thread, elem);
+  const struct thread *b = list_entry (b_, struct thread, elem);
+
+  return a->wakeup_time < b->wakeup_time;
+}
+
+
+
+
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
 void
 timer_init (void) 
 {
+  list_init (&sleep_list);
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
 }
@@ -90,10 +111,20 @@ void
 timer_sleep (int64_t ticks) 
 {
   int64_t start = timer_ticks ();
+  enum intr_level old_level;
 
   ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+
+  old_level = intr_disable ();
+
+  struct thread *cur = thread_current();
+  cur->wakeup_time = start + ticks;
+
+  list_insert_ordered(&sleep_list, &cur->elem, thread_wakeup_time_less, NULL);
+
+  thread_block();
+
+  intr_set_level (old_level);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -172,7 +203,28 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+
+  enum intr_level old_level = intr_disable();
+
+  while (!list_empty(&sleep_list)) {
+    struct list_elem *e = list_front(&sleep_list);
+    struct thread *t = list_entry(e, struct thread, elem);
+
+    if (ticks < t->wakeup_time) {
+      break;
+    }
+
+    list_remove(e);
+    thread_unblock(t);
+  }
+  
+  intr_set_level(old_level);
+
+
+
 }
+
+
 
 /* Returns true if LOOPS iterations waits for more than one timer
    tick, otherwise false. */

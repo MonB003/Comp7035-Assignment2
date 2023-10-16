@@ -29,6 +29,9 @@ ENV PATH=/pintos/src/utils:$PATH
 
 WORKDIR /pintos
 
+# Add the dos2unix command here
+RUN dos2unix /pintos/src/misc/bochs-2.6.11-build.sh
+
 RUN cd /pintos/src/misc && \
     wget --no-check-certificate https://sourceforge.net/projects/bochs/files/bochs/2.6.11/bochs-2.6.11.tar.gz && \
     sh ./bochs-2.6.11-build.sh /usr/local && \
@@ -39,5 +42,3 @@ RUN cd /pintos/src/utils && make
 RUN cd /pintos/src/threads && make
 
 CMD ["pintos"]
-
-
