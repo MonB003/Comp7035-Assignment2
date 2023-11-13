@@ -102,6 +102,11 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+
+    int priority;                       /* Priority. */
+    int nice;                           /* Niceness value. */
+    int recent_cpu;                     /* Recent CPU usage. */
+
   };
 
 
@@ -140,5 +145,12 @@ int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
+
+
+void thread_calculate_priority (struct thread *);
+void thread_calculate_recent_cpu (struct thread *);
+void thread_calculate_load_avg (void);
+
+
 
 #endif /* threads/thread.h */
