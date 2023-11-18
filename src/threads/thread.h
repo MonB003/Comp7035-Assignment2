@@ -103,7 +103,6 @@ struct thread
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
 
-    int priority;                       /* Priority. */
     int nice;                           /* Niceness value. */
     int recent_cpu;                     /* Recent CPU usage. */
 
@@ -114,6 +113,9 @@ struct thread
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
+
+/* Global variable for the system load average */
+extern int load_avg;
 
 void thread_init (void);
 void thread_start (void);
@@ -150,6 +152,7 @@ int thread_get_load_avg (void);
 void thread_calculate_priority (struct thread *);
 void thread_calculate_recent_cpu (struct thread *);
 void thread_calculate_load_avg (void);
+
 
 
 
