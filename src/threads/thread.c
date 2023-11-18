@@ -183,6 +183,10 @@ thread_create (const char *name, int priority,
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
+  /* Initalize MLFQS fields*/
+  t->nice = 0;
+  t->recent_cpu = 0;
+
   /* Stack frame for kernel_thread(). */
   kf = alloc_frame (t, sizeof *kf);
   kf->eip = NULL;
@@ -202,6 +206,39 @@ thread_create (const char *name, int priority,
   thread_unblock (t);
 
   return tid;
+}
+
+// Calulates priority of thread t
+void thread_calculate_priority (struct thread t) {
+    // Check if thread is null
+    ASSERT (t != NULL);
+
+    // Convert nice and recent_cpu to fixed-point
+    int nice = t->nice;
+    int recent_cpu = t->recent_cpu;
+
+    // Calculate priority using fixed-point arithmetic
+    int priority = int_to_fp(PRI_MAX) - divide_x_by_n(recent_cpu, 4) - multiply_x_by_n(int_to_fp(nice), 2);
+
+    // Convert back to integer
+    t->priority = fp_to_int_round_nearest(priority);
+
+    // Ensure priority is within bounds
+    if (t->priority < PRI_MIN)
+        t->priority = PRI_MIN;
+    else if (t->priority > PRI_MAX)
+        t->priority = PRI_MAX;
+}
+
+// Calculates recent_cpu of thread t
+void thread_calculate_recent_cpu(struct threadt) {
+    ASSERT(t != NULL);
+
+    int load_avg_twice = multiply_x_by_n(load_avg, 2);
+    int load_avg_twice_plus_one = add_x_and_n(load_avg_twice, 1);
+    int coefficient = divide_x_by_y(load_avg_twice, load_avg_twice_plus_one);
+    int recent_cpu_contribution = multiply_x_by_y(coefficient, t->recent_cpu);
+    t->recent_cpu = add_x_and_n(recent_cpu_contribution, t->nice);
 }
 
 /* Puts the current thread to sleep.  It will not be scheduled
