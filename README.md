@@ -1,5 +1,5 @@
-# COMP 7035 - Assignment 1 Part 2 
-> This assignment implements a timer_sleep function.
+# COMP 7035 - Assignment 2 
+> This assignment implements a multilevel feedback queue scheduler.
 
 <br>
 
@@ -25,25 +25,26 @@
 Cloning the repository:
 - Open Command Prompt or Terminal
 - `cd` into the folder you want the repository stored in
-- Type: `git clone https://github.com/MonB003/Comp7035-Assignment1-Part2.git`
+- Type: `git clone https://github.com/MonB003/Comp7035-Assignment2.git`
 
 
 ### Running the project:
 - The project can be run from the command line
 
-#### Setup the docker container:
+#### Build the docker container:
 ```
-docker run --rm --name pintos -v $(pwd):/pintos -it thierrysans/pintos bash
+docker build -t pintos-image .
+docker run -it pintos-image bash
 cd /pintos/src/threads/build
 ```
 
-#### Compile the test:
+#### Run the tests:
 ```
-rm tests/threads/alarm-multiple.output
-make tests/threads/alarm-multiple.result
-```
-
-#### Run the test:
-```
-pintos -v -k -T 60 --bochs  -- -q  run alarm-multiple
+pintos -- -q -mlfqs run 'mlfqs-load-1'
+pintos -- -q -mlfqs run 'mlfqs-load-60'
+pintos -- -q -mlfqs run 'mlfqs-load-avg'
+pintos -- -q -mlfqs run 'mlfqs-recent-1'
+pintos -- -q -mlfqs run 'mlfqs-nice-2'
+pintos -- -q -mlfqs run 'mlfqs-nice-10'
+pintos -- -q -mlfqs run 'mlfqs-block'
 ```
